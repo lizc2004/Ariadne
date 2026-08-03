@@ -32,5 +32,4 @@ public class Condivisione {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-
 }
