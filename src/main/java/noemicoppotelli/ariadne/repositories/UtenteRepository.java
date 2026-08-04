@@ -1,4 +1,11 @@
 package noemicoppotelli.ariadne.repositories;
+import noemicoppotelli.ariadne.entities.Utente;
+import org.springframework.data.jpa.repository.JpaRepository;
+import java.util.Optional;
 
-public interface UtenteRepository {
+
+public interface UtenteRepository extends JpaRepository<Utente, Long> {
+    Optional<Utente> findByEmail(String email);
+    boolean existsByEmail(String email);
+
 }
