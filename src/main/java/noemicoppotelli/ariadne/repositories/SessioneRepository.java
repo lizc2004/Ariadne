@@ -1,0 +1,8 @@
+package noemicoppotelli.ariadne.repositories;
+import org.springframework.data.jpa.repository.JpaRepository;
+import noemicoppotelli.ariadne.entities.Sessione;
+import java.util.List;
+
+public interface SessioneRepository extends JpaRepository<Sessione, Long> {
+    List<Sessione> findByUtenteId(Long utenteId);
+}

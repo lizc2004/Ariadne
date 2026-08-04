@@ -2,8 +2,12 @@ package noemicoppotelli.ariadne.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 
 @Getter
 @AllArgsConstructor
@@ -41,9 +45,28 @@ public class RefreshToken {
     private LocalDateTime createdAt;
 
 
-    public void setTokenHash(String tokenHash, PasswordEncoder passwordEncoder) {
-        this.tokenHash = passwordEncoder.encode(tokenHash);
+    public void setTokenHash(String tokenHash) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] encodedHash = digest.digest(
+                    tokenHash.getBytes(StandardCharsets.UTF_8));
+            this.tokenHash = bytesToHex(encodedHash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Impossibile calcolare l'hash del token: algoritmo SHA-256 non disponibile", e);
+        }
     }
+    private static String bytesToHex(byte[] hash) {
+        StringBuilder hexString = new StringBuilder(2 * hash.length);
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) {
+                hexString.append('0');
+            }
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
 }
 
 
