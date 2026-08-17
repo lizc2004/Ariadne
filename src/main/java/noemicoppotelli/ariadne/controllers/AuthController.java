@@ -11,12 +11,18 @@ import noemicoppotelli.ariadne.payloads.LoginResponse;
 import noemicoppotelli.ariadne.service.UtenteService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import noemicoppotelli.ariadne.payloads.RefreshTokenRequest;
+import noemicoppotelli.ariadne.entities.Utente;
+import noemicoppotelli.ariadne.service.RefreshTokenService;
+import noemicoppotelli.ariadne.security.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
 public class AuthController {
     private final UtenteService utenteService;
+    private final RefreshTokenService refreshTokenService;
+    private final JwtService jwtService;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
@@ -27,6 +33,18 @@ public class AuthController {
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = utenteService.login(request);
         return ResponseEntity.ok(response);
+    }
+    @PostMapping("/refresh")
+    public ResponseEntity<LoginResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
+        Utente utente = refreshTokenService.validaRefreshToken(request.getRefreshToken());
+        String nuovoAccessToken = jwtService.generateToken(utente.getEmail());
+        return ResponseEntity.ok(new LoginResponse(nuovoAccessToken, request.getRefreshToken()));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
+        refreshTokenService.revocaRefreshToken(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
     }
 
 }
