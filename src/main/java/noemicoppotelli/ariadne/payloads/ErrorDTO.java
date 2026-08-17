@@ -10,4 +10,5 @@ public class ErrorDTO {
     public String getMessage() {
         return message;
     }
+
 }
