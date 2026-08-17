@@ -44,17 +44,20 @@ public class RefreshToken {
     @Column(nullable = false)
     private LocalDateTime createdAt;
 
-
-    public void setTokenHash(String tokenHash) {
+    public static String hash(String token) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedHash = digest.digest(
-                    tokenHash.getBytes(StandardCharsets.UTF_8));
-            this.tokenHash = bytesToHex(encodedHash);
+            byte[] encodedHash = digest.digest(token.getBytes(StandardCharsets.UTF_8));
+            return bytesToHex(encodedHash);
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("Impossibile calcolare l'hash del token: algoritmo SHA-256 non disponibile", e);
         }
     }
+
+    public void setTokenHash(String tokenHash) {
+        this.tokenHash = hash(tokenHash);
+    }
+
     private static String bytesToHex(byte[] hash) {
         StringBuilder hexString = new StringBuilder(2 * hash.length);
         for (byte b : hash) {
