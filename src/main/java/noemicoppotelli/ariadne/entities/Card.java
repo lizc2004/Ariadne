@@ -7,7 +7,11 @@ import lombok.Setter;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "cards")
+@Table(name = "cards", indexes = {
+        @Index(name = "idx_card_deck_id", columnList = "deck_id"),
+        @Index(name = "idx_card_next_review", columnList = "prossima_revisione")
+})
+
 @Getter
 @Setter
 @NoArgsConstructor
