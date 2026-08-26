@@ -39,8 +39,10 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorDTO> handleGeneric(Exception ex) {
+        ex.printStackTrace();
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new ErrorDTO("Errore interno del server."));
     }
+
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorDTO> handleNotFound(NotFoundException ex) {

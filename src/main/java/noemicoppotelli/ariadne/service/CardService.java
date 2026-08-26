@@ -13,6 +13,7 @@ import noemicoppotelli.ariadne.payloads.CardResponse;
 import noemicoppotelli.ariadne.repositories.CardRepository;
 import noemicoppotelli.ariadne.repositories.DeckRepository;
 import org.springframework.stereotype.Service;
+import java.util.ArrayList;
 
 @Service
 @RequiredArgsConstructor
@@ -107,6 +108,42 @@ public class CardService {
         Card salvata = cardRepository.save(card);
         return new CardResponse(salvata);
 
+    }
+
+    public List<CardResponse> creaCardInBlocco(Long deckId, String testo, Utente utente) {
+        Deck deck = deckRepository.findById(deckId)
+                .orElseThrow(() -> new NotFoundException("Deck non trovato"));
+        if (!deck.getUtente().getId().equals(utente.getId())) {
+            throw new UnauthorizedException("Questo mazzo non appartiene a te.");
+        }
+
+        List<Card> nuoveCarte = new ArrayList<>();
+        for (String riga : testo.split("\n")) {
+            String linea = riga.trim();
+            if (linea.isEmpty() || linea.startsWith("#")) continue;
+
+            int separatore = linea.indexOf('|');
+            if (separatore == -1) separatore = linea.indexOf('\t');
+            if (separatore == -1) continue; // riga non valida, salta
+
+            String fronte = linea.substring(0, separatore).trim();
+            String retro = linea.substring(separatore + 1).trim();
+            if (fronte.isEmpty() || retro.isEmpty()) continue;
+
+            Card card = new Card();
+            card.setFronte(fronte);
+            card.setRetro(retro);
+            card.setDeck(deck);
+            card.setEase(2.5f);
+            card.setIntervallo(0);
+            card.setRipetizioni(0);
+            card.setProssimaRevisione(LocalDate.now());
+            nuoveCarte.add(card);
+        }
+
+        return cardRepository.saveAll(nuoveCarte).stream()
+                .map(CardResponse::new)
+                .toList();
     }
     public void eliminaCard(Long id, Utente utente) {
         Card card = getCardEDaVerificare(id, utente);

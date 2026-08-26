@@ -8,6 +8,7 @@ import noemicoppotelli.ariadne.service.DeckService;
 import noemicoppotelli.ariadne.service.CardService;
 import noemicoppotelli.ariadne.payloads.CardRequest;
 import noemicoppotelli.ariadne.payloads.CardResponse;
+import noemicoppotelli.ariadne.payloads.BulkCardRequest;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -60,6 +61,14 @@ public class DeckController {
     public ResponseEntity<List<CardResponse>> getCardsByDeck(@PathVariable Long deckId,
                                                              @AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(cardService.getCardsByDeck(deckId, getUtenteAutenticato(userDetails)));
+    }
+
+    @PostMapping("/{deckId}/cards/bulk")
+    public ResponseEntity<List<CardResponse>> creaCardInBlocco(@PathVariable Long deckId,
+                                                               @Valid @RequestBody BulkCardRequest request,
+                                                               @AuthenticationPrincipal UserDetails userDetails) {
+        List<CardResponse> carte = cardService.creaCardInBlocco(deckId, request.getTesto(), getUtenteAutenticato(userDetails));
+        return ResponseEntity.status(HttpStatus.CREATED).body(carte);
     }
 
     @DeleteMapping("/{id}")
