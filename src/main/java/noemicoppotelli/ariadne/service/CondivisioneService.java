@@ -6,11 +6,15 @@ import noemicoppotelli.ariadne.entities.Condivisione;
 import noemicoppotelli.ariadne.payloads.CondivisioneRequest;
 import noemicoppotelli.ariadne.enums.StatoCondivisione;
 import noemicoppotelli.ariadne.entities.Utente;
-import noemicoppotelli.ariadne.entities.Task;
 import noemicoppotelli.ariadne.payloads.ProgressiResponse;
 import noemicoppotelli.ariadne.repositories.SessioneRepository;
-import noemicoppotelli.ariadne.entities.Sessione;
 import noemicoppotelli.ariadne.repositories.TaskRepository;
+import noemicoppotelli.ariadne.entities.Deck;
+import noemicoppotelli.ariadne.repositories.DeckRepository;
+import noemicoppotelli.ariadne.repositories.CardRepository;
+import noemicoppotelli.ariadne.payloads.TaskResponse;
+import noemicoppotelli.ariadne.payloads.SessioneResponse;
+import java.time.LocalDate;
 import noemicoppotelli.ariadne.exceptions.NotFoundException;
 import noemicoppotelli.ariadne.exceptions.UnauthorizedException;
 import noemicoppotelli.ariadne.exceptions.BadRequestException;
@@ -25,15 +29,19 @@ public class CondivisioneService {
     private final UtenteRepository utenteRepository;
     private final TaskRepository taskRepository;
     private final SessioneRepository sessioneRepository;
+    private final DeckRepository deckRepository;
+    private final CardRepository cardRepository;
 
     public CondivisioneService(CondivisioneRepository condivisioneRepository, UtenteRepository utenteRepository,
-                               TaskRepository taskRepository, SessioneRepository sessioneRepository) {
+                               TaskRepository taskRepository, SessioneRepository sessioneRepository,
+                               DeckRepository deckRepository, CardRepository cardRepository) {
         this.condivisioneRepository = condivisioneRepository;
         this.utenteRepository = utenteRepository;
         this.taskRepository = taskRepository;
         this.sessioneRepository = sessioneRepository;
+        this.deckRepository = deckRepository;
+        this.cardRepository = cardRepository;
     }
-
 
     public CondivisioneResponse richiediCondivisione(CondivisioneRequest request, Utente viewer) {
         Utente owner = utenteRepository.findByEmail(request.getEmailOwner())
@@ -100,16 +108,27 @@ public class CondivisioneService {
         }
 
         Utente owner = condivisione.getOwner();
+        LocalDate oggi = LocalDate.now();
 
-        List<Task> taskOwner = taskRepository.findByUtenteId(owner.getId());
-        int taskTotali = taskOwner.size();
-        int taskCompletate = (int) taskOwner.stream().filter(Task::isCompletato).count();
+        List<TaskResponse> taskInScadenza = taskRepository.findByUtenteId(owner.getId()).stream()
+                .filter(t -> !t.isCompletato() && !t.getScadenza().isAfter(oggi))
+                .map(TaskResponse::new)
+                .toList();
 
-        LocalDateTime settimanaFa = LocalDateTime.now().minusDays(7);
-        List<Sessione> sessioniRecenti = sessioneRepository.findByUtenteIdAndIniziataBetween(
-                owner.getId(), settimanaFa, LocalDateTime.now());
-        int minutiStudio = sessioniRecenti.stream().mapToInt(Sessione::getMinuti).sum();
+        List<Deck> deckOwner = deckRepository.findByUtenteId(owner.getId());
+        int carteDaRipassare = 0;
+        for (Deck deck : deckOwner) {
+            carteDaRipassare += (int) cardRepository.findByDeckId(deck.getId()).stream()
+                    .filter(c -> !c.getProssimaRevisione().isAfter(oggi))
+                    .count();
+        }
 
-        return new ProgressiResponse(taskTotali, taskCompletate, minutiStudio);
+        LocalDateTime da = LocalDateTime.now().minusDays(40);
+        List<SessioneResponse> sessioni = sessioneRepository
+                .findByUtenteIdAndIniziataBetween(owner.getId(), da, LocalDateTime.now()).stream()
+                .map(SessioneResponse::new)
+                .toList();
+
+        return new ProgressiResponse(taskInScadenza, carteDaRipassare, sessioni);
     }
 }
