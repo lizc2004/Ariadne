@@ -5,6 +5,7 @@ import noemicoppotelli.ariadne.payloads.CondivisioneRequest;
 import noemicoppotelli.ariadne.payloads.CondivisioneResponse;
 import noemicoppotelli.ariadne.repositories.UtenteRepository;
 import noemicoppotelli.ariadne.service.CondivisioneService;
+import noemicoppotelli.ariadne.payloads.ProgressiResponse;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -60,5 +61,10 @@ public class CondivisioneController {
     @GetMapping("/concesse")
     public ResponseEntity<List<CondivisioneResponse>> getConcesse(@AuthenticationPrincipal UserDetails userDetails) {
         return ResponseEntity.ok(condivisioneService.getConcesse(getUtenteAutenticato(userDetails)));
+    }
+    @GetMapping("/{id}/progressi")
+    public ResponseEntity<ProgressiResponse> getProgressi(@PathVariable Long id,
+                                                          @AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(condivisioneService.getProgressi(id, getUtenteAutenticato(userDetails)));
     }
 }
