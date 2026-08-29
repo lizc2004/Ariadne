@@ -6,6 +6,11 @@ import noemicoppotelli.ariadne.entities.Condivisione;
 import noemicoppotelli.ariadne.payloads.CondivisioneRequest;
 import noemicoppotelli.ariadne.enums.StatoCondivisione;
 import noemicoppotelli.ariadne.entities.Utente;
+import noemicoppotelli.ariadne.entities.Task;
+import noemicoppotelli.ariadne.payloads.ProgressiResponse;
+import noemicoppotelli.ariadne.repositories.SessioneRepository;
+import noemicoppotelli.ariadne.entities.Sessione;
+import noemicoppotelli.ariadne.repositories.TaskRepository;
 import noemicoppotelli.ariadne.exceptions.NotFoundException;
 import noemicoppotelli.ariadne.exceptions.UnauthorizedException;
 import noemicoppotelli.ariadne.exceptions.BadRequestException;
@@ -18,10 +23,15 @@ import java.util.List;
 public class CondivisioneService {
     private final CondivisioneRepository condivisioneRepository;
     private final UtenteRepository utenteRepository;
+    private final TaskRepository taskRepository;
+    private final SessioneRepository sessioneRepository;
 
-    public CondivisioneService(CondivisioneRepository condivisioneRepository, UtenteRepository utenteRepository) {
+    public CondivisioneService(CondivisioneRepository condivisioneRepository, UtenteRepository utenteRepository,
+                               TaskRepository taskRepository, SessioneRepository sessioneRepository) {
         this.condivisioneRepository = condivisioneRepository;
         this.utenteRepository = utenteRepository;
+        this.taskRepository = taskRepository;
+        this.sessioneRepository = sessioneRepository;
     }
 
 
@@ -78,5 +88,28 @@ public class CondivisioneService {
                 .filter(c -> c.getStato() == StatoCondivisione.ACCETTATO)
                 .map(CondivisioneResponse::new)
                 .toList();
+    }
+    public ProgressiResponse getProgressi(Long condivisioneId, Utente viewer) {
+        Condivisione condivisione = condivisioneRepository.findById(condivisioneId)
+                .orElseThrow(() -> new NotFoundException("Condivisione non trovata"));
+        if (!condivisione.getViewer().getId().equals(viewer.getId())) {
+            throw new UnauthorizedException("Questa condivisione non ti appartiene.");
+        }
+        if (condivisione.getStato() != StatoCondivisione.ACCETTATO) {
+            throw new UnauthorizedException("La condivisione non è stata accettata.");
+        }
+
+        Utente owner = condivisione.getOwner();
+
+        List<Task> taskOwner = taskRepository.findByUtenteId(owner.getId());
+        int taskTotali = taskOwner.size();
+        int taskCompletate = (int) taskOwner.stream().filter(Task::isCompletato).count();
+
+        LocalDateTime settimanaFa = LocalDateTime.now().minusDays(7);
+        List<Sessione> sessioniRecenti = sessioneRepository.findByUtenteIdAndIniziataBetween(
+                owner.getId(), settimanaFa, LocalDateTime.now());
+        int minutiStudio = sessioniRecenti.stream().mapToInt(Sessione::getMinuti).sum();
+
+        return new ProgressiResponse(taskTotali, taskCompletate, minutiStudio);
     }
 }
