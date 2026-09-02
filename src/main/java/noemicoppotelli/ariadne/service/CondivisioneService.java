@@ -6,6 +6,15 @@ import noemicoppotelli.ariadne.entities.Condivisione;
 import noemicoppotelli.ariadne.payloads.CondivisioneRequest;
 import noemicoppotelli.ariadne.enums.StatoCondivisione;
 import noemicoppotelli.ariadne.entities.Utente;
+import noemicoppotelli.ariadne.payloads.ProgressiResponse;
+import noemicoppotelli.ariadne.repositories.SessioneRepository;
+import noemicoppotelli.ariadne.repositories.TaskRepository;
+import noemicoppotelli.ariadne.entities.Deck;
+import noemicoppotelli.ariadne.repositories.DeckRepository;
+import noemicoppotelli.ariadne.repositories.CardRepository;
+import noemicoppotelli.ariadne.payloads.TaskResponse;
+import noemicoppotelli.ariadne.payloads.SessioneResponse;
+import java.time.LocalDate;
 import noemicoppotelli.ariadne.exceptions.NotFoundException;
 import noemicoppotelli.ariadne.exceptions.UnauthorizedException;
 import noemicoppotelli.ariadne.exceptions.BadRequestException;
@@ -18,12 +27,21 @@ import java.util.List;
 public class CondivisioneService {
     private final CondivisioneRepository condivisioneRepository;
     private final UtenteRepository utenteRepository;
+    private final TaskRepository taskRepository;
+    private final SessioneRepository sessioneRepository;
+    private final DeckRepository deckRepository;
+    private final CardRepository cardRepository;
 
-    public CondivisioneService(CondivisioneRepository condivisioneRepository, UtenteRepository utenteRepository) {
+    public CondivisioneService(CondivisioneRepository condivisioneRepository, UtenteRepository utenteRepository,
+                               TaskRepository taskRepository, SessioneRepository sessioneRepository,
+                               DeckRepository deckRepository, CardRepository cardRepository) {
         this.condivisioneRepository = condivisioneRepository;
         this.utenteRepository = utenteRepository;
+        this.taskRepository = taskRepository;
+        this.sessioneRepository = sessioneRepository;
+        this.deckRepository = deckRepository;
+        this.cardRepository = cardRepository;
     }
-
 
     public CondivisioneResponse richiediCondivisione(CondivisioneRequest request, Utente viewer) {
         Utente owner = utenteRepository.findByEmail(request.getEmailOwner())
@@ -78,5 +96,39 @@ public class CondivisioneService {
                 .filter(c -> c.getStato() == StatoCondivisione.ACCETTATO)
                 .map(CondivisioneResponse::new)
                 .toList();
+    }
+    public ProgressiResponse getProgressi(Long condivisioneId, Utente viewer) {
+        Condivisione condivisione = condivisioneRepository.findById(condivisioneId)
+                .orElseThrow(() -> new NotFoundException("Condivisione non trovata"));
+        if (!condivisione.getViewer().getId().equals(viewer.getId())) {
+            throw new UnauthorizedException("Questa condivisione non ti appartiene.");
+        }
+        if (condivisione.getStato() != StatoCondivisione.ACCETTATO) {
+            throw new UnauthorizedException("La condivisione non è stata accettata.");
+        }
+
+        Utente owner = condivisione.getOwner();
+        LocalDate oggi = LocalDate.now();
+
+        List<TaskResponse> taskInScadenza = taskRepository.findByUtenteId(owner.getId()).stream()
+                .filter(t -> !t.isCompletato() && !t.getScadenza().isAfter(oggi))
+                .map(TaskResponse::new)
+                .toList();
+
+        List<Deck> deckOwner = deckRepository.findByUtenteId(owner.getId());
+        int carteDaRipassare = 0;
+        for (Deck deck : deckOwner) {
+            carteDaRipassare += (int) cardRepository.findByDeckId(deck.getId()).stream()
+                    .filter(c -> !c.getProssimaRevisione().isAfter(oggi))
+                    .count();
+        }
+
+        LocalDateTime da = LocalDateTime.now().minusDays(40);
+        List<SessioneResponse> sessioni = sessioneRepository
+                .findByUtenteIdAndIniziataBetween(owner.getId(), da, LocalDateTime.now()).stream()
+                .map(SessioneResponse::new)
+                .toList();
+
+        return new ProgressiResponse(taskInScadenza, carteDaRipassare, sessioni);
     }
 }
