@@ -4,6 +4,8 @@ API REST per Ariadne, un'app di supporto allo studio. Riscrittura in Spring Boot
 
 Frontend: [repository separata](https://github.com/lizc2004/Ariadne_frontend), React + Vite.
 
+**Live:** [ariadnestudy.netlify.app](https://ariadnestudy.netlify.app) — API su [ariadne-pnqv.onrender.com](https://ariadne-pnqv.onrender.com) (Render free tier, si "risveglia" dopo inattività: la prima richiesta può richiedere fino a 50 secondi).
+
 ---
 
 ## Cosa fa
@@ -17,7 +19,7 @@ Frontend: [repository separata](https://github.com/lizc2004/Ariadne_frontend), R
 
 ## Stack tecnologico
 
-- Java 26, Spring Boot 4.1.0
+- Java 25, Spring Boot 4.1.0
 - Spring Security 7.1.0 + JJWT 0.12.6 (JWT)
 - Hibernate 7.4.1 / Spring Data JPA
 - PostgreSQL
@@ -47,4 +49,3 @@ Non è l'SM-2 da manuale: è una variante a 4 livelli di valutazione (`NON_RICOR
 ## Roadmap
 
 - Mappe concettuali AI-assistite (entità `MappaConcettuale` già presente, endpoint da implementare)
-- Deploy in produzione
