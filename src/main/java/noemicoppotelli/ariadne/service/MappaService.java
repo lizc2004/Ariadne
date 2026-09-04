@@ -45,7 +45,7 @@ public class MappaService {
     }
 
     public MappaResponse genera(String testo, Utente utente) {
-        String mermaid = chiamaClaude(testo);
+        String mermaid = pulisciMarkdown(chiamaClaude(testo));
         validaSintassiMermaid(mermaid);
 
         MappaConcettuale mappa = new MappaConcettuale();
@@ -88,6 +88,16 @@ public class MappaService {
         } catch (Exception e) {
             throw new BadRequestException("Generazione mappa fallita: " + e.getMessage());
         }
+    }
+
+    private String pulisciMarkdown(String testo) {
+        if (testo == null) return null;
+        // A volte l'AI avvolge la risposta in un blocco ```mermaid ... ``` nonostante le istruzioni:
+        // togliamo le eventuali code fence prima di validare.
+        return testo.trim()
+                .replaceAll("^```(?:mermaid)?\\s*", "")
+                .replaceAll("```\\s*$", "")
+                .trim();
     }
 
     private void validaSintassiMermaid(String mermaid) {
