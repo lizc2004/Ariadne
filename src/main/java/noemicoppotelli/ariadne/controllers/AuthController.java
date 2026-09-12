@@ -15,6 +15,9 @@ import noemicoppotelli.ariadne.payloads.RefreshTokenRequest;
 import noemicoppotelli.ariadne.entities.Utente;
 import noemicoppotelli.ariadne.service.RefreshTokenService;
 import noemicoppotelli.ariadne.security.JwtService;
+import noemicoppotelli.ariadne.payloads.RichiediResetRequest;
+import noemicoppotelli.ariadne.payloads.ResetPasswordRequest;
+import noemicoppotelli.ariadne.service.PasswordResetService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -23,6 +26,7 @@ public class AuthController {
     private final UtenteService utenteService;
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
@@ -44,6 +48,18 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request) {
         refreshTokenService.revocaRefreshToken(request.getRefreshToken());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/richiedi-reset")
+    public ResponseEntity<Void> richiediReset(@Valid @RequestBody RichiediResetRequest request) {
+        passwordResetService.richiediReset(request.getEmail());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resettaPassword(request.getToken(), request.getNuovaPassword());
         return ResponseEntity.noContent().build();
     }
 
